@@ -2,11 +2,13 @@
 import rclpy
 import os
 import yaml
+from math import pi, cos, sin
 from rclpy.node import Node
 from geometry_msgs.msg import Point
 from rclpy.qos import qos_profile_sensor_data
 from std_msgs.msg import Bool, Float64, Float64MultiArray
-from sensor_msgs import LaserScan
+from sensor_msgs.msg import LaserScan
+from snuboat_msgs.msg import Obstacles
 import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
@@ -21,7 +23,7 @@ class Lidar_Converter(Node):
         self.dt = 0.1
         self.obstacle = [] 
         self.obstacles = []
-        self.cartesian_scan = [] # origin: boat
+        self.cartesian_scan = np.empty((0,2),float) # origin: boat
         
         self.lidar_scan_sub = self.create_subscription(LaserScan, '/scan', self.lidar_scan_callback, qos_profile_sensor_data)
         
@@ -51,25 +53,32 @@ class Lidar_Converter(Node):
     def lidar_scan_callback(self, msg):
         self.lidar_scan_received = True
         #temporary polar coord []
-        temp_polar = []
+        temp_polar = np.empty((0,2),float)
         phi = msg.angle_min # radians
         for r in msg.ranges:
             if msg.range_min <= r <= msg.range_max:
                 temp_polar = np.append(temp_polar,[[r,phi]],axis=0)
-                p = Point.polar_to_cartesian(r, phi)
-                self.cartesian_scan = np.append(self.cartesian_scan, p, axis = 0)
+                #Point => polar_to_cartesian not exist 
+                p = [r*cos(phi),r*sin(phi)]
+                self.cartesian_scan = np.append(self.cartesian_scan, [p], axis = 0)
             phi += msg.angle_increment
-            
-        points = np.array(self.cartesian_scan)
+        print(self.cartesian_scan)
+        print(len(self.cartesian_scan))
+        print(msg.angle_increment)
+        points = self.cartesian_scan
         scaler = StandardScaler()
         points_scaled = scaler.fit_transform(points)
-        dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust the parameters as per your data
+        dbscan = DBSCAN(eps=0.1, min_samples=5)  # Adjust the parameters as per your data
         dbscan.fit(points_scaled)
         self.scan_labels = dbscan.labels_
-        
+        print(self.scan_labels)
+        print(temp_polar)
         # append label to polar coord
-        for i,coord in enumerate(temp_polar):
+        for i in range(len(temp_polar)):
+            coord = temp_polar[i]
             coord = np.insert(coord,0,self.scan_labels[i])
+            print("label added")
+            print(coord)
             self.polar_pub = np.append(self.polar_pub,[coord],axis=0)
         
     # publish obstacle sinfo

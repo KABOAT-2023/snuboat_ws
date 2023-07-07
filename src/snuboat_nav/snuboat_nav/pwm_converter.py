@@ -1,4 +1,4 @@
-# X-CORPS
+# KABOAT
 import rclpy
 import os
 import yaml
@@ -43,7 +43,8 @@ class PWMConverter(Node):
         self.Kp_rudder = self.declare_parameter("Kp_rudder", default_params['Kp_rudder']).value
         self.Kd_rudder = self.declare_parameter("Kd_rudder", default_params['Kd_rudder']).value
             
-        namespace_OS = '/OS'
+        #namespace_OS = '/OS'
+        namespace_OS = ''
         
         self.OS_des_heading = np.zeros(10)
         self.OS_des_spd = np.zeros(10)

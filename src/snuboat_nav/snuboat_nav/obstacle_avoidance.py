@@ -5,12 +5,13 @@ import yaml
 from rclpy.node import Node
 from geometry_msgs.msg import Point
 from std_msgs.msg import Bool, Int8, Float64, Float64MultiArray
-from sensor_msgs import LaserScan
+from sensor_msgs.msg import LaserScan
+from snuboat_msgs.msg import Obstacles
 import numpy as np
 
 class Obstacle_Avoidance(Node):
     def __init__(self): 
-        super().__init__('obstacle avoidance')
+        super().__init__('obstacle_avoidance')
         
         default_params = {
             # to be modified
@@ -50,7 +51,7 @@ class Obstacle_Avoidance(Node):
         
         # why 10?
         self.enu_pos = np.zeros((10, 2))
-        self.enu_wp_set = np.zeros((10,2))
+        self.enu_wp_set = np.zeros((10,2),dtype = float)
         self.heading = np.zeros(10)
         self.spd = np.zeros(10)
         self.obstacles = []
@@ -94,9 +95,11 @@ class Obstacle_Avoidance(Node):
 
     def enu_wp_set_callback(self,msg):
         self.enu_wp_received = True
-        self.enu_wp_set = msg.data 
-
-        self.wp_reach_check = np.linalg.norm(self.enu_pos[-1, :] - self.enu_wp_set[self.cur_wp_idx, :]) < self.goal_tol
+        temp_set = np.array(msg.data)
+        self.enu_wp_set = np.reshape(temp_set,(int(len(temp_set)/2),2))
+        print(self.enu_pos[-1,:])
+        print(self.enu_wp_set)
+        self.wp_reach_check = np.linalg.norm(self.enu_pos[-1, :]-self.enu_wp_set[self.cur_wp_idx, :]) < self.goal_tol
         if self.wp_reach_check == True:
             if self.wp_state == False:
                 self.get_logger().info("Changing waypoint ...")

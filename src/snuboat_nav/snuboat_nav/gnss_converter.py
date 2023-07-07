@@ -94,12 +94,15 @@ class GNSSConverter(Node):
             self.enu_pos_log_pub.publish(enu_pos_log)
 
         self.enu_wp_set = np.zeros((len(self.wp_set[:, 0]), 3))
-        for i in len(self.wp_set[:, 0]):
+        for i in range(len(self.wp_set[:, 0])):
             self.enu_wp_set[i, 0], self.enu_wp_set[i, 1], self.enu_wp_set[i, 2] = self.enu_convert([self.wp_set[i, 0], self.wp_set[i, 1]])
             
         enu_wp_set = Float64MultiArray()
-        enu_wp_set.data = self.enu_wp_set[:, 0:1]
+        temp_wp_set = self.enu_wp_set[:, 0:2].reshape([2*len(self.enu_wp_set[:, 0:2])])
+        #numpy float error!!
+        enu_wp_set.data = temp_wp_set.tolist()
         self.enu_wp_set_pub.publish(enu_wp_set)
+        
 
 
 def main(args=None):
